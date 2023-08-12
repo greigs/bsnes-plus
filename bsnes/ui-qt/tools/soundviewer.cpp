@@ -201,22 +201,24 @@ void SoundViewerWindow::synchronize() {
 		
 		uint8_t source = SNES::dsp.read(0x4 + (i << 4));
 		channelSource[i]->setText(QString("Sample #%1").arg(source));
-		if (source == (uint8_t)14 && i == 0){
-			unsigned pitch = ((SNES::dsp.read(0x2 /* SPC_DSP::v_pitchl */ + (i << 4)) << 0)
-						+ (SNES::dsp.read(0x3 /* SPC_DSP::v_pitchh */ + (i << 4)) << 8));
-		
-			double l = log2((double)pitch) - OCTAVE_OFFSET;
-			int note = (int)round(l * 12);
-			if (prevNote != note){
-				if(!notesfile.open()) {
-					string name = filepath("notes.log", "");
-					notesfile.open(name, file::mode::readwrite);
+		if (i == 0){
+			if (source == (uint8_t)14){
+				unsigned pitch = ((SNES::dsp.read(0x2 /* SPC_DSP::v_pitchl */ + (i << 4)) << 0)
+							+ (SNES::dsp.read(0x3 /* SPC_DSP::v_pitchh */ + (i << 4)) << 8));
+			
+				double l = log2((double)pitch) - OCTAVE_OFFSET;
+				int note = (int)round(l * 12);
+				if (prevNote != note){
+					if(!notesfile.open()) {
+						string name = filepath("notes.log", "");
+						notesfile.open(name, file::mode::readwrite);
+					}
+					notesfile.seek(notesfile.size());
+					notesfile.print(string() << "SAMPLE 14: " << note << "\n");
+					notesfile.close();
 				}
-				notesfile.seek(notesfile.size());
-				notesfile.print(string() << "SAMPLE 14: " << note << "\n");
-				notesfile.close();
+				prevNote = note;
 			}
-			prevNote = note;
 		}
 		
 		channelEcho[i]->setChecked((eon & (1<<i)) && !(flg & 0x20));
